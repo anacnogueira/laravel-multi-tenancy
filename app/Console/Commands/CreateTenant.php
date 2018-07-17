@@ -10,6 +10,7 @@ use Hyn\Tenancy\Environment;
 use Hyn\Tenancy\Models\Hostname;
 use Hyn\Tenancy\Models\Website;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\TenantCreated;
 
 class CreateTenant extends Command
 {
@@ -60,13 +61,12 @@ class CreateTenant extends Command
         $this->connectTenant($hostname); 
 
         $password = str_random();
-        $admin = $this->addAdmin($name, $email, $password);
-        if ($admin) {
-            $this->info("Tenant '{$admin->name}' is created and is now accessible at {$hostname->fqdn}");
-            $this->info("Admin {$admin->email} can log in using password {$password}");
-        } else {
-             $this->error("The user cannot be created");
-        }        
+        $admin = $this->addAdmin($name, $email, $password)
+            ->notify(new TenantCreated($hostname));
+   
+        $this->info("Tenant '{$name}' is created and is now accessible at {$hostname->fqdn}");
+        $this->info("Admin {$email} has been invited!");
+           
     }
 
     private function tenantExists($name)
