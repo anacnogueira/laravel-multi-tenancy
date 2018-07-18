@@ -11,9 +11,7 @@
 |
 */
 
-/*Route::get('/', function () {
-    return view('welcome');
-});*/
+/*
 
 Auth::routes();
 
@@ -23,5 +21,13 @@ Route::domain('{tenant}.multi-tenancy.test')->group(function () {
     });
 });
 
-Route::get('/home', 'HomeController@index')->name('home');
+*/
+
+Route::group(['middleware' => 'tenancy.enforce'], function () {
+   Route::get('/', function () {
+    return view('welcome');
+   });
+    Auth::routes();
+    Route::get('/home', 'HomeController@index')->name('home');
+});
 
