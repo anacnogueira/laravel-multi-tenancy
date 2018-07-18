@@ -2,15 +2,10 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\User;
-use Hyn\Tenancy\Contracts\Repositories\HostnameRepository;
-use Hyn\Tenancy\Contracts\Repositories\WebsiteRepository;
-use Hyn\Tenancy\Environment;
-use Hyn\Tenancy\Models\Hostname;
-use Hyn\Tenancy\Models\Website;
-use Illuminate\Support\Facades\Hash;
 use App\Notifications\TenantCreated;
+use App\Tenant;
+use Hyn\Tenancy\Models\Customer;
+use Illuminate\Console\Command;
 
 class CreateTenant extends Command
 {
@@ -57,16 +52,12 @@ class CreateTenant extends Command
             return;
         }    
 
-        $hostname = $this->registerTenant($name);   
-        $this->connectTenant($hostname); 
-
-        $password = str_random();
-        $admin = $this->addAdmin($name, $email, $password)
-            ->notify(new TenantCreated($hostname));
-   
-        $this->info("Tenant '{$name}' is created and is now accessible at {$hostname->fqdn}");
+        $tenant = Tenant::createFrom($name, $email);
+        $this->info("Tenant '{$name}' is created and is now accessible at {$tenant->hostname->fqdn}");
+        // invite admin
+        $tenant->admin->notify(new TenantCreated($tenant->hostname));
         $this->info("Admin {$email} has been invited!");
-           
+          
     }
 
     private function tenantExists($name)

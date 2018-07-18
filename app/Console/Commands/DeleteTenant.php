@@ -53,18 +53,11 @@ class DeleteTenant extends Command
             return;
         }
         $name = $this->argument('name');
-        $this->deleteTenant($name);
-    }
-
-    private function deleteTenant($name)
-    {
-        $fqdn = "{$name}.{$this->domain}";
-
-        if ($hostname = Hostname::where('fqdn', $fqdn)->with(['website'])->firstOrFail()) {
-            $website = $hostname->website()->first();
-            app(HostnameRepository::class)->delete($hostname, true);
-            app(WebsiteRepository::class)->delete($website, true);            
-            $this->info("Tenant {$name} successfully deleted.");
-        }
-    }
+        if ($tenant = Tenant::retrieveBy($name)) {
+           $tenant->delete();
+           $this->info("Tenant {$name} successfully deleted.");
+       } else {
+           $this->error("Couldn't find tenant {$name}");
+       }
+    }  
 }
