@@ -7,6 +7,9 @@
                 <div class="card">
                     <div class="card-header">Update Profile</div>
                     <div class="card-body">
+                      @if(Session::has('alert'))
+                          <p class="alert alert-class alert-{{ Session::get('alert.type') }}">{{ Session::get('alert.message') }}</p>
+                      @endif
                         <form class="form" method="POST" action="{{ route('tenant.account.profile.update') }}">
                             {{ csrf_field() }}
                             {{ method_field('PATCH') }}
