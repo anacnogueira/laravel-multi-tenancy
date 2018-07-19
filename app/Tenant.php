@@ -38,7 +38,8 @@ class Tenant
   public static function createFrom($name, $email): Tenant
   {
     $website = new Website;
-    $website->uuid = $name."_".str_random(10);
+    $website->uuid = $name."_".str_random(20);
+
     app(WebsiteRepository::class)->create($website);
 
     $hostname = new Hostname;
