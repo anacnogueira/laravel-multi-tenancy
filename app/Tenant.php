@@ -8,19 +8,25 @@ use Hyn\Tenancy\Models\Website;
 use Illuminate\Support\Facades\Hash;
 use Hyn\Tenancy\Contracts\Repositories\HostnameRepository;
 use Hyn\Tenancy\Contracts\Repositories\WebsiteRepository;
+use App\User;
 
 class Tenant
 {
 
-  protected $domain;
+  static $domain;
 
   public function __construct(Hostname $hostname, Website $website = null,  User $admin = null)
   {
     $this->hostname = $hostname;
     $this->website = $website ?? $hostname->website->first();
     $this->admin = $admin;
+  }
+
+  public static function getDomain()
+  {
     $baseUrl = config('app.url');
-    $this->domain = parse_url($baseUrl)['host'];
+    self::$domain = parse_url($baseUrl)['host'];
+    return self::$domain;
   }
 
   public function delete()
@@ -32,49 +38,33 @@ class Tenant
   public static function createFrom($name, $email): Tenant
   {
     $website = new Website;
+    $website->uuid = $name."_".str_random(10);
     app(WebsiteRepository::class)->create($website);
 
-    // associate the website with a hostname
     $hostname = new Hostname;
 
-    $hostname->fqdn = "{$name}.{$this->domain}";
+    $domain = self::getDomain();
+
+    $hostname->fqdn = "{$name}.{$domain}";
     app(HostnameRepository::class)->attach($hostname, $website);
-    $this->connectTenant($hostname);
+    self::connectTenant($hostname);
 
     $admin = static::makeAdmin($name, $email, str_random());
-    return new Tenant($website, $hostname, $admin);
+    return new Tenant($hostname, $website, $admin);
   }
 
-  private static function makeAdmin($name, $email, $password): Us  private function deleteTenant($name)
-    {
-        $fqdn = "{$name}.{$this->domain}";
-
-        if ($hostname = Hostname::where('fqdn', $fqdn)->with(['website'])->firstOrFail()) {
-            $website = $hostname->website()->first();
-            app(HostnameRepository::class)->delete($hostname, true);
-            app(WebsiteRepository::class)->delete($website, true);
-            $this->info("Tenant {$name} successfully deleted.");
-        }
-    }er
+  private static function makeAdmin($name, $email, $password): User
   {
-      $admin = User::create(['name' => $name, 'email' => $email, 'password' => Hash::make($password)]);
-      $admin->guard_name = 'web';
-      $admin->assignRole('admin');
-      return $admin;
-  }
-
-  private function connectTenant($hostname)
-  {
-    $tenancy = app(Environment::class);
-    $tenancy->hostname($hostname);
-    $website = $hostname->website;
-    $tenancy->hostname(); // resolves $hostname as currently active hostname
-    $tenancy->tenant($website); // switches the tenant and reconfigures the app
+    $admin = User::create(['name' => $name, 'email' => $email, 'password' => Hash::make($password)]);
+    $admin->guard_name = 'web';
+    $admin->assignRole('admin');
+    return $admin;
   }
 
   public static function retrieveBy($name): ?Tenant
   {
-    $fqdn = "{$name}.{$this->domain}";
+    $domain = self::getDomain();
+    $fqdn = "{$name}.{$domain}";
 
     if ($hostname = Hostname::where('fqdn', $fqdn)->with(['website'])->first()) {
         return new Tenant($hostname);
@@ -83,4 +73,12 @@ class Tenant
     return null;
   }
 
+  private static function connectTenant($hostname)
+  {
+    $tenancy = app(Environment::class);
+    $tenancy->hostname($hostname);
+    $website = $hostname->website;
+    $tenancy->hostname();
+    $tenancy->tenant($website);
+  }
 }
