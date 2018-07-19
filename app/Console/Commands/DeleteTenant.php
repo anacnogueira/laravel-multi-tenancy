@@ -2,12 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Hyn\Tenancy\Models\Hostname;
-use Hyn\Tenancy\Contracts\Repositories\HostnameRepository;
-use Hyn\Tenancy\Contracts\Repositories\WebsiteRepository;
-use Hyn\Tenancy\Environment;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Config;
+use App\Tenant;
 
 class DeleteTenant extends Command
 {
@@ -59,5 +55,5 @@ class DeleteTenant extends Command
        } else {
            $this->error("Couldn't find tenant {$name}");
        }
-    }  
+    }
 }
